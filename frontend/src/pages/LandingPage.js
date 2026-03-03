@@ -1,10 +1,15 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { QrCode, Utensils, ArrowRight } from 'lucide-react';
+import { QrCode, Utensils, ArrowRight, TestTube } from 'lucide-react';
 
 const LandingPage = () => {
   const navigate = useNavigate();
+
+  // Test data - simulate QR code scan
+  const handleTestMenu = () => {
+    navigate('/menu?restaurant_id=4e5be1a0-9a05-4909-8d30-8a4ce714d599&table_id=d07ca7e4-f1f6-4ab8-abcb-a22243ea63c1');
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#FAFAFA] to-white">
@@ -72,6 +77,17 @@ const LandingPage = () => {
             <div className="w-24 h-24 bg-gray-100 rounded-lg mx-auto mb-4 flex items-center justify-center">
               <QrCode className="w-12 h-12 text-gray-400" />
             </div>
+            
+            {/* Test Button */}
+            <button
+              data-testid="test-menu-button"
+              onClick={handleTestMenu}
+              className="w-full bg-[#10B981] hover:bg-[#059669] text-white rounded-full py-3 px-6 font-bold transition-all active:scale-95 flex items-center justify-center gap-2 mb-3"
+            >
+              <TestTube className="w-5 h-5" />
+              Testar Menu Demo
+            </button>
+            <p className="text-xs text-[#71717A]">Simula a leitura de um QR Code (Mesa 1)</p>
           </div>
 
           <button

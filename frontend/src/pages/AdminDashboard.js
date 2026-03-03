@@ -144,6 +144,7 @@ const AdminDashboard = () => {
   };
 
   const activeOrders = orders.filter(o => ['received', 'preparing', 'ready'].includes(o.status));
+  const deliveredOrders = orders.filter(o => o.status === 'delivered');
 
   if (loading) {
     return (
@@ -198,6 +199,19 @@ const AdminDashboard = () => {
                   {activeOrders.length}
                 </span>
               )}
+            </button>
+
+            <button
+              data-testid="history-tab"
+              onClick={() => setActiveTab('history')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                activeTab === 'history'
+                  ? 'bg-orange-50 text-[#FF5500]'
+                  : 'text-[#71717A] hover:bg-gray-50'
+              }`}
+            >
+              <CheckCircle className="w-5 h-5" />
+              <span className="font-medium">Histórico</span>
             </button>
 
             <button
@@ -374,6 +388,55 @@ const AdminDashboard = () => {
                       getStatusColor={getStatusColor}
                       getStatusText={getStatusText}
                     />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* History Tab */}
+        {activeTab === 'history' && (
+          <div>
+            <h1 className="text-3xl font-bold text-[#18181B] mb-8">Histórico de Pedidos</h1>
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+              {deliveredOrders.length === 0 ? (
+                <p className="text-[#71717A] text-center py-8">Nenhum pedido entregue</p>
+              ) : (
+                <div className="space-y-4">
+                  {deliveredOrders.map((order) => (
+                    <div key={order.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <p className="font-bold text-lg text-[#18181B]">Pedido #{order.id.slice(-8)}</p>
+                          <p className="text-sm text-[#71717A]">
+                            Mesa {order.table_number} • {new Date(order.created_at).toLocaleString('pt-PT')}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <span className="px-3 py-1 rounded-full text-sm font-medium bg-gray-200 text-gray-700">
+                            Entregue
+                          </span>
+                          {order.payment_status === 'paid' && (
+                            <p className="text-xs text-[#10B981] mt-1">✓ Pago</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 mb-3 border-t border-gray-200 pt-3">
+                        {order.items.map((item, index) => (
+                          <p key={index} className="text-sm text-[#71717A]">
+                            {item.quantity}x {item.product_name}
+                            {item.extras && item.extras.length > 0 && ` (+ ${item.extras.map(e => e.name).join(', ')})`}
+                          </p>
+                        ))}
+                      </div>
+
+                      <div className="flex items-center justify-between pt-3 border-t border-gray-200">
+                        <span className="text-sm text-[#71717A]">Total</span>
+                        <span className="font-bold text-lg text-[#FF5500]">€{order.total.toFixed(2)}</span>
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}

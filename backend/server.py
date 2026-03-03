@@ -752,12 +752,13 @@ async def get_restaurant_stats(restaurant_id: str, current_user: dict = Depends(
         "created_at": {"$gte": today_start.isoformat()}
     })
     
-    # Total revenue today
+    # Total revenue today (only delivered orders)
     pipeline = [
         {"$match": {
             "restaurant_id": restaurant_id,
             "created_at": {"$gte": today_start.isoformat()},
-            "payment_status": "paid"
+            "payment_status": "paid",
+            "status": "delivered"
         }},
         {"$group": {"_id": None, "total": {"$sum": "$total"}}}
     ]
