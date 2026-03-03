@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { ChefHat, ShoppingCart, ArrowLeft } from 'lucide-react';
+import { ChefHat, ShoppingCart, ArrowLeft, Plus, Minus } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -164,12 +164,17 @@ const ProductCard = ({ product, onAddToCart }) => {
   const [showDetails, setShowDetails] = useState(false);
   const [selectedExtras, setSelectedExtras] = useState([]);
   const [notes, setNotes] = useState('');
+  const [quantity, setQuantity] = useState(1);
 
   const handleAddToCart = () => {
-    onAddToCart(product, selectedExtras, notes);
+    // Add multiple items based on quantity
+    for (let i = 0; i < quantity; i++) {
+      onAddToCart(product, selectedExtras, notes);
+    }
     setShowDetails(false);
     setSelectedExtras([]);
     setNotes('');
+    setQuantity(1);
   };
 
   const toggleExtra = (extra) => {
@@ -180,9 +185,19 @@ const ProductCard = ({ product, onAddToCart }) => {
     }
   };
 
+  const increaseQuantity = () => {
+    setQuantity(prev => prev + 1);
+  };
+
+  const decreaseQuantity = () => {
+    if (quantity > 1) {
+      setQuantity(prev => prev - 1);
+    }
+  };
+
   const getTotalPrice = () => {
     const extrasPrice = selectedExtras.reduce((sum, extra) => sum + extra.price, 0);
-    return product.price + extrasPrice;
+    return (product.price + extrasPrice) * quantity;
   };
 
   return (
@@ -292,6 +307,31 @@ const ProductCard = ({ product, onAddToCart }) => {
                   className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF5500] focus:border-transparent"
                   rows={3}
                 />
+              </div>
+
+              {/* Quantity Selector */}
+              <div className="mb-6">
+                <h3 className="font-bold text-lg mb-3">Quantidade</h3>
+                <div className="flex items-center justify-center gap-4 p-4 border border-gray-200 rounded-lg">
+                  <button
+                    data-testid="decrease-quantity"
+                    onClick={decreaseQuantity}
+                    disabled={quantity <= 1}
+                    className="w-10 h-10 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-300 rounded-full flex items-center justify-center text-xl font-bold transition-all active:scale-95"
+                  >
+                    −
+                  </button>
+                  <span className="text-2xl font-bold text-[#18181B] w-12 text-center" data-testid="quantity-display">
+                    {quantity}
+                  </span>
+                  <button
+                    data-testid="increase-quantity"
+                    onClick={increaseQuantity}
+                    className="w-10 h-10 bg-[#FF5500] hover:bg-[#CC4400] text-white rounded-full flex items-center justify-center text-xl font-bold transition-all active:scale-95"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
 
               <button
