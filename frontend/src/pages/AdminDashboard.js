@@ -18,6 +18,7 @@ import {
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { useSocket } from '../contexts/SocketContext';
+import MenuManagement from './MenuManagement';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -380,16 +381,8 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* Menu & Tables Tabs - Placeholders */}
-        {activeTab === 'menu' && (
-          <div>
-            <h1 className="text-3xl font-bold text-[#18181B] mb-8">Gestão de Menu</h1>
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center">
-              <UtensilsCrossed className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <p className="text-[#71717A]">Funcionalidade em desenvolvimento</p>
-            </div>
-          </div>
-        )}
+        {/* Menu & Tables Tabs */}
+        {activeTab === 'menu' && <MenuManagement />}
 
         {activeTab === 'tables' && (
           <div>
