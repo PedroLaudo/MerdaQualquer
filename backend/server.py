@@ -2777,3 +2777,5 @@ async def shutdown_db_client():
 # Export socket_app as app for uvicorn to use Socket.IO
 # This enables real-time WebSocket connections
 app = socket_app
+
+
