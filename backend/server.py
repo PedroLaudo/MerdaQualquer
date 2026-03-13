@@ -1010,21 +1010,22 @@ async def get_table_qrcode(table_id: str):
     qr_color = "#1a2342"
     img = qr.make_image(fill_color=qr_color, back_color="white").convert('RGBA')
     
-    # Try to add logo in center
+    # Try to add QR icon in center (using the Z icon, not the full logo)
     try:
-        logo_path = Path(__file__).parent.parent / "frontend" / "public" / "logo.png"
+        # Use qr-icon.png (just the Z symbol) instead of logo.png (full logo with text)
+        logo_path = Path(__file__).parent.parent / "frontend" / "public" / "qr-icon.png"
         if logo_path.exists():
             logo = Image.open(logo_path).convert('RGBA')
             
-            # Calculate logo size (about 25% of QR code)
+            # Calculate logo size (about 22% of QR code for better fit)
             qr_width, qr_height = img.size
-            logo_max_size = int(qr_width * 0.25)
+            logo_max_size = int(qr_width * 0.22)
             
             # Resize logo maintaining aspect ratio
             logo.thumbnail((logo_max_size, logo_max_size), Image.Resampling.LANCZOS)
             
             # Create white circle background for logo
-            logo_bg_size = int(logo_max_size * 1.2)
+            logo_bg_size = int(logo_max_size * 1.15)
             logo_bg = Image.new('RGBA', (logo_bg_size, logo_bg_size), (255, 255, 255, 255))
             
             # Center logo on white background
