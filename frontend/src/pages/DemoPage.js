@@ -46,7 +46,7 @@ const colors = {
 };
 
 // Logo URL
-const logoUrl = 'https://customer-assets.emergentagent.com/job_qr-order-hub-5/artifacts/43m0gij6_zentra_qr.png';
+const logoUrl = '/logo.png';
 
 // Demo data
 const demoCategories = [

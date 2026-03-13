@@ -312,11 +312,8 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <div className="flex items-center gap-3">
-              <img src={logoUrl} alt="ZentraQR Logo" className="w-10 h-10 object-contain" />
-              <span className="font-bold text-xl tracking-tight" style={{ color: colors.primary }}>
-                ZentraQR
-              </span>
+            <div className="flex items-center">
+              <img src={logoUrl} alt="ZentraQR Logo" className="h-10 object-contain" />
             </div>
 
             {/* Desktop Nav Links */}
@@ -969,9 +966,8 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-4 gap-8 mb-12">
             <div className="md:col-span-2">
-              <div className="flex items-center gap-3 mb-4">
-                <img src={logoUrl} alt="ZentraQR Logo" className="w-10 h-10 object-contain" />
-                <span className="font-bold text-xl" style={{ color: colors.primary }}>ZentraQR</span>
+              <div className="flex items-center mb-4">
+                <img src={logoUrl} alt="ZentraQR Logo" className="h-10 object-contain" />
               </div>
               <p className="text-sm max-w-sm leading-relaxed" style={{ color: colors.gray }}>
                 {t('footer.description')}
