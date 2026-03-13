@@ -1,120 +1,112 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { LogIn, ChefHat } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
+import { Label } from "../components/ui/label";
+import { useToast } from "../hooks/use-toast";
+import { LogIn } from "lucide-react";
 
 const AdminLoginPage = () => {
-  const navigate = useNavigate();
-  const { login } = useAuth();
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setLoading(true);
-
+    setIsLoading(true);
     try {
-      const result = await login(email, password);
-
-      if (result.success) {
-        navigate('/admin/dashboard');
+      const success = await login(email, password);
+      if (success) {
+        toast({ title: "Bem-vindo!", description: "Login realizado com sucesso." });
+        navigate('/backoffice');
       } else {
-        setError(result.error || 'Erro ao fazer login');
+        toast({ variant: "destructive", title: "Erro", description: "Credenciais inválidas." });
       }
-    } catch (err) {
-      setError('Erro ao fazer login. Verifique os seus dados.');
+    } catch (error) {
+      toast({ variant: "destructive", title: "Erro", description: "Falha na conexão com o servidor." });
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#F3F4F6] flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md"
-      >
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-[#1a2342] rounded-full mb-4 shadow-lg shadow-slate-500/20">
-            <ChefHat className="w-8 h-8 text-white" />
+    <div className="flex min-h-screen w-full">
+      {/* LADO ESQUERDO: Formulário */}
+      <div className="flex w-full flex-col justify-center px-8 md:w-[450px] lg:w-[600px] xl:w-[700px]">
+        <div className="mx-auto w-full max-w-[400px] space-y-6">
+          <div className="flex flex-col space-y-2 text-left">
+            {/* Logo da Zentra */}
+            <img 
+              src="/logo.png" 
+              alt="Zentra Logo" 
+              className="h-12 w-auto mb-4 self-start"
+            />
+            <h1 className="text-3xl font-bold tracking-tight">Login de Cliente</h1>
+            <p className="text-muted-foreground text-sm">
+              Introduza as suas credenciais para gerir o seu restaurante.
+            </p>
           </div>
-          <h1 className="text-3xl font-bold text-[#18181B] mb-2">Painel Administrativo</h1>
-          <p className="text-[#71717A]">Faça login para gerir o seu restaurante</p>
-        </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                {error}
-              </div>
-            )}
-
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-[#18181B] mb-2">
-                Email
-              </label>
-              <input
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
                 id="email"
-                data-testid="email-input"
                 type="email"
+                placeholder="nome@exemplo.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1a2342] focus:border-transparent"
-                placeholder="seu@email.com"
+                className="h-11"
               />
             </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-[#18181B] mb-2">
-                Password
-              </label>
-              <input
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
                 id="password"
-                data-testid="password-input"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1a2342] focus:border-transparent"
-                placeholder="••••••••"
+                className="h-11"
               />
             </div>
-
-            <button
-              type="submit"
-              data-testid="login-button"
-              disabled={loading}
-              className="w-full bg-[#1a2342] hover:bg-[#0f1529] text-white rounded-lg py-3 px-6 font-bold shadow-lg shadow-slate-500/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            <Button 
+              type="submit" 
+              className="w-full h-11 bg-primary text-primary-foreground font-medium" 
+              disabled={isLoading}
             >
-              {loading ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
-              ) : (
-                <>
-                  <LogIn className="w-5 h-5" />
-                  <span>Entrar</span>
-                </>
-              )}
-            </button>
+              {isLoading ? "A entrar..." : "Entrar na conta"}
+            </Button>
           </form>
-
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => navigate('/')}
-              className="text-[#71717A] hover:text-[#1a2342] text-sm font-medium transition-all"
-            >
-              Voltar ao início
-            </button>
-          </div>
+          
+          <p className="px-8 text-center text-sm text-muted-foreground">
+            Ao entrar, concorda com os nossos Termos de Serviço e Política de Privacidade.
+          </p>
         </div>
-      </motion.div>
+      </div>
+
+      {/* LADO DIREITO: Imagem */}
+      <div className="relative hidden w-full bg-muted lg:block">
+        <img
+          src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=2070&auto=format&fit=crop"
+          alt="Restaurante Interior"
+          className="absolute inset-0 h-full w-full object-cover brightness-[0.7]"
+        />
+        <div className="absolute inset-0 flex items-end p-12 bg-gradient-to-t from-black/60 to-transparent">
+          <blockquote className="space-y-2 text-white">
+            <p className="text-lg italic font-light">
+              "A Zentra revolucionou a forma como gerimos os pedidos e a experiência dos nossos clientes à mesa."
+            </p>
+            <footer className="text-sm font-semibold">— Equipa Zentra QR</footer>
+          </blockquote>
+        </div>
+      </div>
     </div>
   );
 };
