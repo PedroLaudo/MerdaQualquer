@@ -274,6 +274,58 @@ class FloorRoomUpdate(BaseModel):
     height: Optional[float] = None
     label: Optional[str] = None
 
+# QR Code Settings Models
+class QRSettings(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    restaurant_id: str
+    title: str = "SCAN FOR"
+    subtitle: str = "MENU & ORDER"
+    cta_text: str = "Aponte a câmara do telemóvel para o código"
+    table_prefix: str = "TABLE"
+    show_logo: bool = True
+    logo_position: str = "top"  # top, center, none
+    layout_style: str = "layout1"  # layout1, layout2, layout3
+    background_color: str = "#f8f7f4"
+    text_color: str = "#1a2342"
+    qr_color: str = "#1a2342"
+    card_style: str = "rounded"  # rounded, sharp, minimal
+    show_instructions: bool = True
+    custom_logo_url: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class QRSettingsCreate(BaseModel):
+    restaurant_id: str
+    title: str = "SCAN FOR"
+    subtitle: str = "MENU & ORDER"
+    cta_text: str = "Aponte a câmara do telemóvel para o código"
+    table_prefix: str = "TABLE"
+    show_logo: bool = True
+    logo_position: str = "top"
+    layout_style: str = "layout1"
+    background_color: str = "#f8f7f4"
+    text_color: str = "#1a2342"
+    qr_color: str = "#1a2342"
+    card_style: str = "rounded"
+    show_instructions: bool = True
+    custom_logo_url: Optional[str] = None
+
+class QRSettingsUpdate(BaseModel):
+    title: Optional[str] = None
+    subtitle: Optional[str] = None
+    cta_text: Optional[str] = None
+    table_prefix: Optional[str] = None
+    show_logo: Optional[bool] = None
+    logo_position: Optional[str] = None
+    layout_style: Optional[str] = None
+    background_color: Optional[str] = None
+    text_color: Optional[str] = None
+    qr_color: Optional[str] = None
+    card_style: Optional[str] = None
+    show_instructions: Optional[bool] = None
+    custom_logo_url: Optional[str] = None
+
 class Category(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -1014,6 +1066,104 @@ async def get_table_qrcode_data(table_id: str):
         "table_number": table.get('table_number'),
         "qr_url": qr_url
     }
+
+# ============= QR SETTINGS ROUTES =============
+
+@api_router.get("/qr-settings/{restaurant_id}")
+async def get_qr_settings(restaurant_id: str, current_user: dict = Depends(get_current_user)):
+    """Get QR code settings for a restaurant"""
+    settings = await db.qr_settings.find_one({"restaurant_id": restaurant_id}, {"_id": 0})
+    if not settings:
+        # Return default settings
+        return {
+            "restaurant_id": restaurant_id,
+            "title": "SCAN FOR",
+            "subtitle": "MENU & ORDER",
+            "cta_text": "Aponte a câmara do telemóvel para o código",
+            "table_prefix": "TABLE",
+            "show_logo": True,
+            "logo_position": "top",
+            "layout_style": "layout1",
+            "background_color": "#f8f7f4",
+            "text_color": "#1a2342",
+            "qr_color": "#1a2342",
+            "card_style": "rounded",
+            "show_instructions": True,
+            "custom_logo_url": None
+        }
+    return settings
+
+@api_router.post("/qr-settings")
+async def create_qr_settings(settings: QRSettingsCreate, current_user: dict = Depends(get_current_user)):
+    """Create QR code settings for a restaurant"""
+    # Check if settings already exist
+    existing = await db.qr_settings.find_one({"restaurant_id": settings.restaurant_id})
+    if existing:
+        raise HTTPException(status_code=400, detail="Configurações já existem para este restaurante")
+    
+    settings_dict = settings.model_dump()
+    settings_dict["id"] = str(uuid.uuid4())
+    settings_dict["created_at"] = datetime.now(timezone.utc).isoformat()
+    settings_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.qr_settings.insert_one(settings_dict)
+    
+    result = await db.qr_settings.find_one({"id": settings_dict["id"]}, {"_id": 0})
+    return result
+
+@api_router.put("/qr-settings/{restaurant_id}")
+async def update_qr_settings(restaurant_id: str, settings: QRSettingsUpdate, current_user: dict = Depends(get_current_user)):
+    """Update QR code settings for a restaurant"""
+    existing = await db.qr_settings.find_one({"restaurant_id": restaurant_id})
+    
+    update_data = {k: v for k, v in settings.model_dump().items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    if existing:
+        await db.qr_settings.update_one({"restaurant_id": restaurant_id}, {"$set": update_data})
+    else:
+        # Create new settings with updates
+        new_settings = QRSettingsCreate(restaurant_id=restaurant_id, **update_data).model_dump()
+        new_settings["id"] = str(uuid.uuid4())
+        new_settings["created_at"] = datetime.now(timezone.utc).isoformat()
+        new_settings["updated_at"] = datetime.now(timezone.utc).isoformat()
+        await db.qr_settings.insert_one(new_settings)
+    
+    result = await db.qr_settings.find_one({"restaurant_id": restaurant_id}, {"_id": 0})
+    return result
+
+@api_router.post("/qr-settings/upload-logo")
+async def upload_qr_logo(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
+    """Upload a custom logo for QR codes"""
+    # Validate file type
+    if not file.content_type.startswith('image/'):
+        raise HTTPException(status_code=400, detail="O arquivo deve ser uma imagem")
+    
+    # Create uploads directory if not exists
+    upload_dir = Path(__file__).parent / "uploads" / "qr-logos"
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Generate unique filename
+    file_ext = file.filename.split('.')[-1] if '.' in file.filename else 'png'
+    filename = f"{current_user['restaurant_id']}_{uuid.uuid4()}.{file_ext}"
+    file_path = upload_dir / filename
+    
+    # Save file
+    with open(file_path, "wb") as buffer:
+        content = await file.read()
+        buffer.write(content)
+    
+    # Return URL
+    logo_url = f"/api/uploads/qr-logos/{filename}"
+    return {"logo_url": logo_url}
+
+@api_router.get("/uploads/qr-logos/{filename}")
+async def get_qr_logo(filename: str):
+    """Serve uploaded QR logo files"""
+    file_path = Path(__file__).parent / "uploads" / "qr-logos" / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Logo não encontrado")
+    return FileResponse(file_path)
 
 @api_router.put("/tables/{table_id}/position")
 async def update_table_position(table_id: str, position: TablePositionUpdate, current_user: dict = Depends(get_current_user)):

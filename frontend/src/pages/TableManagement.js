@@ -8,10 +8,13 @@ import {
   Printer,
   X,
   Check,
-  Loader2
+  Loader2,
+  Settings,
+  Palette
 } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import QRCodeEditor from './QRCodeEditor';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -23,6 +26,7 @@ const TableManagement = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [showQREditor, setShowQREditor] = useState(false);
   const [selectedTable, setSelectedTable] = useState(null);
   const [newTable, setNewTable] = useState({ table_number: '', capacity: 4 });
   const [saving, setSaving] = useState(false);
@@ -237,14 +241,29 @@ const TableManagement = () => {
     <div>
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold text-[#18181B]">Gestão de Mesas</h1>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 bg-[#1a2342] hover:bg-[#0f1529] text-white px-4 py-2 rounded-lg font-medium transition-all"
-          data-testid="add-table-button"
-        >
-          <Plus className="w-5 h-5" />
-          Adicionar Mesa
-        </button>
+        <div className="flex gap-3">
+          {tables.length > 0 && (
+            <button
+              onClick={() => {
+                setSelectedTable(tables[0]);
+                setShowQREditor(true);
+              }}
+              className="flex items-center gap-2 bg-white border-2 border-[#1a2342] text-[#1a2342] hover:bg-[#1a2342] hover:text-white px-4 py-2 rounded-lg font-medium transition-all"
+              data-testid="customize-qr-button"
+            >
+              <Palette className="w-5 h-5" />
+              Personalizar QR Codes
+            </button>
+          )}
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 bg-[#1a2342] hover:bg-[#0f1529] text-white px-4 py-2 rounded-lg font-medium transition-all"
+            data-testid="add-table-button"
+          >
+            <Plus className="w-5 h-5" />
+            Adicionar Mesa
+          </button>
+        </div>
       </div>
 
       {/* Tables Grid */}
@@ -303,6 +322,17 @@ const TableManagement = () => {
                   >
                     <Download className="w-4 h-4" />
                     Baixar
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedTable(table);
+                      setShowQREditor(true);
+                    }}
+                    className="flex items-center justify-center p-2 bg-[#1a2342]/10 hover:bg-[#1a2342]/20 text-[#1a2342] rounded-lg transition-all"
+                    title="Personalizar QR Code"
+                    data-testid={`customize-qr-${table.id}`}
+                  >
+                    <Palette className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => printQRCode(table)}
@@ -495,6 +525,21 @@ const TableManagement = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* QR Code Editor Modal */}
+      {showQREditor && (
+        <QRCodeEditor
+          table={selectedTable}
+          tables={tables}
+          onClose={() => {
+            setShowQREditor(false);
+            setSelectedTable(null);
+          }}
+          onSave={() => {
+            // Settings saved
+          }}
+        />
       )}
     </div>
   );
