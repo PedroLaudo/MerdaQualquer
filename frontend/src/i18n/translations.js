@@ -151,7 +151,7 @@ export const translations = {
       product: 'Produto',
       contact: 'Contacto',
       sendMessage: 'Enviar mensagem →',
-      rights: '© 2024 ZentraQR. Todos os direitos reservados.',
+      rights: '© 2026 ZentraQR. Todos os direitos reservados.',
       terms: 'Termos',
       privacy: 'Privacidade',
       admin: 'Admin',
@@ -217,6 +217,19 @@ export const translations = {
       live: 'Live',
       vsYesterday: 'vs ontem',
     },
+      login: {
+        title: 'Login de Cliente',
+        description: 'Introduza as suas credenciais para gerir o seu restaurante.',
+        emailLabel: 'Email',
+        passwordLabel: 'Password',
+        button: 'Entrar na conta',
+        buttonLoading: 'A entrar...',
+        footer: 'Ao entrar, concorda com os nossos Termos de Serviço e Política de Privacidade.',
+        quote: '"A Zentra revolucionou a forma como gerimos os pedidos e a experiência dos nossos clientes à mesa."',
+        toastSuccess: 'Login realizado com sucesso.',
+        toastError: 'Credenciais inválidas.',
+        toastConnError: 'Falha na conexão com o servidor.',
+  }
   },
   en: {
     // Navbar
@@ -369,7 +382,7 @@ export const translations = {
       product: 'Product',
       contact: 'Contact',
       sendMessage: 'Send message →',
-      rights: '© 2024 ZentraQR. All rights reserved.',
+      rights: '© 2026 ZentraQR. All rights reserved.',
       terms: 'Terms',
       privacy: 'Privacy',
       admin: 'Admin',
@@ -435,6 +448,19 @@ export const translations = {
       live: 'Live',
       vsYesterday: 'vs yesterday',
     },
+    login: {
+      title: 'Client Login',
+      description: 'Enter your credentials to manage your restaurant.',
+      emailLabel: 'Email',
+      passwordLabel: 'Password',
+      button: 'Sign in',
+      buttonLoading: 'Signing in...',
+      footer: 'By signing in, you agree to our Terms of Service and Privacy Policy.',
+      quote: '"Zentra has revolutionized how we manage orders and our customers\' experience at the table."',
+      toastSuccess: 'Login successful.',
+      toastError: 'Invalid credentials.',
+      toastConnError: 'Server connection failed.',
+    }
   },
 };
 
