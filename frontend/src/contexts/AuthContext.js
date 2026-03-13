@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
 const BACKEND_URL = "https://zentraqr-api-git-main-zentraqr-6009s-projects.vercel.app";
-const API = `${BACKEND_URL}/api`;
+const API = "https://zentraqr-api-git-main-zentraqr-6009s-projects.vercel.app/api";
 
 const AuthContext = createContext();
 
