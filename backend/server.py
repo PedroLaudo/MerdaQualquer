@@ -106,6 +106,13 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+class PasswordResetConfirm(BaseModel):
+    token: str
+    new_password: str
+
 class Restaurant(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -2757,7 +2764,75 @@ async def get_email_detail(email_id: str):
     if not email:
         raise HTTPException(status_code=404, detail="Email não encontrado")
     return email
+# ============= PASSWORD RECOVERY ROUTES =============
 
+@api_router.post("/auth/forgot-password")
+async def forgot_password(request: PasswordResetRequest):
+    """Gera um token de recuperação e envia por email"""
+    user = await db.users.find_one({"email": request.email})
+    
+    # Por segurança, retornamos sucesso mesmo que o email não exista
+    if not user:
+        return {"message": "Se o email estiver registado, receberá um link de recuperação."}
+
+    # Gerar token JWT temporário (expira em 1 hora)
+    token_data = {
+        "sub": user["id"],
+        "exp": datetime.now(timezone.utc) + timedelta(hours=1),
+        "purpose": "password_reset"
+    }
+    reset_token = jwt.encode(token_data, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+    # Construir link para o frontend
+    frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
+    reset_link = f"{frontend_url}/reset-password?token={reset_token}"
+    
+    html_body = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Recuperação de Password - ZentraQR</h2>
+        <p>Recebemos um pedido para redefinir a sua password. Clique no botão abaixo para prosseguir:</p>
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{reset_link}" style="background-color: #1a2342; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px;">Redefinir Password</a>
+        </div>
+        <p>Este link expira em 1 hora.</p>
+        <p>Se não solicitou esta alteração, pode ignorar este email.</p>
+    </div>
+    """
+    
+    # Enviar usando a função já existente
+    send_email_gmail(user["email"], "Recuperação de Password - ZentraQR", html_body)
+    
+    return {"message": "Email de recuperação enviado com sucesso."}
+
+@api_router.post("/auth/reset-password")
+async def reset_password(data: PasswordResetConfirm):
+    """Valida o token e atualiza a password na base de dados"""
+    try:
+        # Decodificar e validar o token
+        payload = jwt.decode(data.token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        
+        if payload.get("purpose") != "password_reset":
+            raise HTTPException(status_code=400, detail="Token inválido para esta operação")
+            
+        user_id = payload.get("sub")
+        new_hashed_password = hash_password(data.new_password)
+        
+        # Atualizar no MongoDB
+        result = await db.users.update_one(
+            {"id": user_id},
+            {"$set": {"password": new_hashed_password}}
+        )
+        
+        if result.modified_count == 0:
+            raise HTTPException(status_code=404, detail="Utilizador não encontrado")
+            
+        return {"message": "Password atualizada com sucesso!"}
+        
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=400, detail="O link de recuperação expirou")
+    except jwt.JWTError:
+        raise HTTPException(status_code=400, detail="Token de recuperação inválido")
+        
 # ============= INCLUDE ROUTER =============
 
 fastapi_app.include_router(api_router)
@@ -2777,5 +2852,6 @@ async def shutdown_db_client():
 # Export socket_app as app for uvicorn to use Socket.IO
 # This enables real-time WebSocket connections
 app = socket_app
+
 
 

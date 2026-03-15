@@ -1,8 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
-const BACKEND_URL = "https://zentraqr-api-git-main-zentraqr-6009s-projects.vercel.app";
-const API = "https://zentraqr-api-git-main-zentraqr-6009s-projects.vercel.app/api";
+// const BACKEND_URL = "https://zentraqr-api-git-main-zentraqr-6009s-projects.vercel.app";
+// const API = "https://zentraqr-api-git-main-zentraqr-6009s-projects.vercel.app/api";
+
+const BACKEND_URL = "http://localhost:8001";
+const API = "http://localhost:8001/api";
 
 const AuthContext = createContext();
 
@@ -128,6 +131,63 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+// Função para pedir o email de recuperação
+  const forgotPassword = async (email) => {
+    try {
+      const response = await axios.post(`${API}/auth/forgot-password`, { email });
+      return { success: true, message: response.data.message };
+    } catch (error) {
+      let errorMessage = 'Erro de ligação ao servidor';
+      
+      if (error.response?.data?.detail) {
+        const detail = error.response.data.detail;
+        if (Array.isArray(detail)) {
+          // Mapear os erros e traduzir os mais comuns
+          errorMessage = detail.map(err => {
+            if (err.msg && err.msg.includes('valid email')) {
+              return 'Por favor, introduza um endereço de email válido.';
+            }
+            return err.msg || 'Erro de validação';
+          }).join(', ');
+        } else if (typeof detail === 'string') {
+          errorMessage = detail;
+        }
+      }
+      
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  // Função para enviar a nova password com o token
+  const resetPassword = async (token, newPassword) => {
+    try {
+      const response = await axios.post(`${API}/auth/reset-password`, { 
+        token, 
+        new_password: newPassword 
+      });
+      return { success: true, message: response.data.message };
+    } catch (error) {
+      let errorMessage = 'Erro de ligação ao servidor';
+      
+      if (error.response?.data?.detail) {
+        const detail = error.response.data.detail;
+        if (Array.isArray(detail)) {
+          // Mapear os erros e traduzir os mais comuns
+          errorMessage = detail.map(err => {
+            if (err.msg && err.msg.includes('valid email')) {
+              return 'Por favor, introduza um endereço de email válido.';
+            }
+            return err.msg || 'Erro de validação';
+          }).join(', ');
+        } else if (typeof detail === 'string') {
+          errorMessage = detail;
+        }
+      }
+      
+      return { success: false, error: errorMessage };
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -143,7 +203,9 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     loading,
-    isAuthenticated: !!user
+    isAuthenticated: !!user,
+    forgotPassword, 
+    resetPassword   
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

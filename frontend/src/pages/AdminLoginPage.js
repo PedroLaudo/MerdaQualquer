@@ -88,6 +88,16 @@ const AdminLoginPage = () => {
               />
             </div>
 
+            <div className="flex justify-end">
+  <button
+    type="button"
+    onClick={() => navigate('/forgot-password')}
+    className="text-sm text-[#71717A] hover:text-[#1a2342] transition-colors"
+  >
+    Esqueceu-se da password?
+  </button>
+</div>
+
             <button
               type="submit"
               data-testid="login-button"

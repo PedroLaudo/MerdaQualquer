@@ -19,6 +19,8 @@ import OnboardingPage from './pages/OnboardingPage';
 import SignupPage from './pages/SignupPage';
 import SubscriptionSuccessPage from './pages/SubscriptionSuccessPage';
 import FloorPlanPage from './pages/FloorPlanPage';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 function App() {
   return (
@@ -45,6 +47,8 @@ function App() {
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/admin/floor-plan" element={<FloorPlanPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
             </Routes>
           </SocketProvider>
         </AuthProvider>
