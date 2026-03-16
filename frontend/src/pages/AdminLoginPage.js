@@ -20,12 +20,17 @@ const AdminLoginPage = () => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const success = await login(email, password);
-      if (success) {
+      const result = await login(email, password);
+      if (result.success) {
         toast({ title: "Zentra", description: t('login.toastSuccess') });
-        navigate('/backoffice');
+        navigate('/admin/dashboard'); // <-- era '/backoffice'
+
       } else {
-        toast({ variant: "destructive", title: "Erro", description: t('login.toastError') });
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: result.error || t('login.toastError'),
+        });
       }
     } catch (error) {
       toast({ variant: "destructive", title: "Erro", description: t('login.toastConnError') });
@@ -40,9 +45,9 @@ const AdminLoginPage = () => {
       <div className="flex w-full flex-col justify-center px-8 md:w-[450px] lg:w-[600px] xl:w-[700px]">
         <div className="mx-auto w-full max-w-[400px] space-y-6">
           <div className="flex flex-col space-y-2 text-left">
-            <img 
-              src="/logo.png" 
-              alt="Zentra Logo" 
+            <img
+              src="/logo.png"
+              alt="Zentra Logo"
               className="h-12 w-auto mb-4 self-start"
             />
             <h1 className="text-3xl font-bold tracking-tight">{t('login.title')}</h1>
@@ -75,15 +80,24 @@ const AdminLoginPage = () => {
                 className="h-11"
               />
             </div>
-            <Button 
-              type="submit" 
-              className="w-full h-11 bg-primary text-primary-foreground font-medium" 
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => navigate('/forgot-password')}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {t('login.forgotPassword') ?? 'Esqueceu-se da password?'}
+              </button>
+            </div>
+            <Button
+              type="submit"
+              className="w-full h-11 bg-primary text-primary-foreground font-medium"
               disabled={isLoading}
             >
               {isLoading ? t('login.buttonLoading') : t('login.button')}
             </Button>
           </form>
-          
+
           <p className="px-8 text-center text-sm text-muted-foreground">
             {t('login.footer')}
           </p>
