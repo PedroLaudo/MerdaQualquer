@@ -376,6 +376,7 @@ class Product(BaseModel):
     extras: List[Extra] = []
     highlighted: bool = False  # For chef recommendations / popular items
     display_order: int = 0     # For manual ordering
+    availability_status: str = "available"  # "available" | "sold_out"
     active: bool = True
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -389,6 +390,10 @@ class ProductCreate(BaseModel):
     extras: List[ExtraCreate] = []
     highlighted: bool = False
     display_order: int = 0
+    availability_status: str = "available"
+
+class ProductAvailabilityUpdate(BaseModel):
+    availability_status: str  # "available" | "sold_out"
 
 class MenuConfig(BaseModel):
     """Restaurant menu configuration - controls presentation only"""
@@ -1575,6 +1580,25 @@ async def update_product(product_id: str, product: ProductCreate, current_user: 
 async def delete_product(product_id: str, current_user: dict = Depends(get_current_user)):
     await db.products.update_one({"id": product_id}, {"$set": {"active": False}})
     return {"message": "Produto desativado"}
+
+@api_router.patch("/products/{product_id}/availability")
+async def update_product_availability(
+    product_id: str,
+    update: ProductAvailabilityUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Quick toggle for product availability (available/sold_out)"""
+    if update.availability_status not in ("available", "sold_out"):
+        raise HTTPException(status_code=400, detail="Status inválido. Use 'available' ou 'sold_out'")
+    
+    result = await db.products.update_one(
+        {"id": product_id},
+        {"$set": {"availability_status": update.availability_status}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Produto não encontrado")
+    
+    return {"id": product_id, "availability_status": update.availability_status}
 
 # ============= ORDER ROUTES =============
 

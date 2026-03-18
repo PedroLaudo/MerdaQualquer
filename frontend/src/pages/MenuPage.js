@@ -212,7 +212,8 @@ const MenuPageContent = ({ restaurantId, tableId, navigate }) => {
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.description?.toLowerCase().includes(searchQuery.toLowerCase())
       : true;
-    return matchesCategory && matchesSearch;
+    const isAvailable = p.availability_status !== 'sold_out';
+    return matchesCategory && matchesSearch && isAvailable;
   });
 
   const cartTotal = cart.reduce((sum, item) => {
@@ -236,6 +237,9 @@ const MenuPageContent = ({ restaurantId, tableId, navigate }) => {
     );
   }
 
+  // Filter out sold_out products for customer view
+  const availableProducts = products.filter(p => p.availability_status !== 'sold_out');
+
   // Render text menu if active (uses same categories/products)
   if (menuType === 'text') {
     return (
@@ -243,7 +247,7 @@ const MenuPageContent = ({ restaurantId, tableId, navigate }) => {
         {/* Text Menu - Using unified categories/products */}
         <TextMenuRenderer
           categories={categories}
-          products={products}
+          products={availableProducts}
           template={textMenuTemplate}
           onAddToCart={addTextMenuItemToCart}
           brandPrimary={brandPrimary}

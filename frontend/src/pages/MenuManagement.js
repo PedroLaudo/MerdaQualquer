@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Edit2, Trash2, Save, X, Image as ImageIcon, Upload, Camera, Star, Eye, Utensils } from 'lucide-react';
+import { Plus, Edit2, Trash2, Save, X, Image as ImageIcon, Upload, Camera, Star, Eye, Utensils, CircleOff, CircleCheck } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import TextMenuRenderer from '../components/menu/TextMenuRenderer';
@@ -233,6 +233,23 @@ const MenuManagement = () => {
     setShowProductModal(true);
   };
 
+  const toggleAvailability = async (product) => {
+    const newStatus = product.availability_status === 'sold_out' ? 'available' : 'sold_out';
+    try {
+      await axios.patch(
+        `${API}/products/${product.id}/availability`,
+        { availability_status: newStatus },
+        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+      );
+      setProducts(prev => prev.map(p => 
+        p.id === product.id ? { ...p, availability_status: newStatus } : p
+      ));
+    } catch (error) {
+      console.error('Erro ao alterar disponibilidade:', error);
+      alert('Erro ao alterar disponibilidade');
+    }
+  };
+
   const filteredProducts = selectedCategory === 'all' 
     ? products 
     : products.filter(p => p.category_id === selectedCategory);
@@ -340,7 +357,7 @@ const MenuManagement = () => {
               <div className="max-h-[600px] overflow-y-auto">
                 <TextMenuRenderer
                   categories={categories}
-                  products={products}
+                  products={products.filter(p => p.availability_status !== 'sold_out')}
                   template={textMenuTemplate}
                   onAddToCart={() => {}}
                   previewMode={true}
@@ -414,6 +431,7 @@ const MenuManagement = () => {
                   product={product}
                   categories={categories}
                   onEdit={() => handleOpenProductModal(product)}
+                  onToggleAvailability={() => toggleAvailability(product)}
                   onDelete={async () => {
                     if (window.confirm('Desativar este produto?')) {
                       await axios.delete(`${API}/products/${product.id}`);
@@ -493,27 +511,44 @@ const CategoryCard = ({ category, onEdit, onDelete }) => {
   );
 };
 
-const ProductCard = ({ product, categories, onEdit, onDelete }) => {
+const ProductCard = ({ product, categories, onEdit, onDelete, onToggleAvailability }) => {
   const category = categories.find(c => c.id === product.category_id);
+  const isSoldOut = product.availability_status === 'sold_out';
   
   return (
-    <div data-testid={`product-card-${product.id}`} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-700/50 hover:shadow-md transition-all">
-      {product.image_url ? (
-        <img src={product.image_url} alt={product.name} className="w-full h-32 object-cover" />
-      ) : (
-        <div className="w-full h-32 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-600 dark:to-gray-700 flex items-center justify-center">
-          <Utensils className="w-10 h-10 text-gray-400 dark:text-gray-500" />
-        </div>
-      )}
+    <div data-testid={`product-card-${product.id}`} className={`border rounded-lg overflow-hidden hover:shadow-md transition-all ${isSoldOut ? 'border-red-300 dark:border-red-800 opacity-75' : 'border-gray-200 dark:border-gray-700'} bg-white dark:bg-gray-700/50`}>
+      <div className="relative">
+        {product.image_url ? (
+          <img src={product.image_url} alt={product.name} className={`w-full h-32 object-cover ${isSoldOut ? 'grayscale' : ''}`} />
+        ) : (
+          <div className="w-full h-32 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-600 dark:to-gray-700 flex items-center justify-center">
+            <Utensils className="w-10 h-10 text-gray-400 dark:text-gray-500" />
+          </div>
+        )}
+        {/* Availability Badge */}
+        <button
+          data-testid={`availability-toggle-${product.id}`}
+          onClick={(e) => { e.stopPropagation(); onToggleAvailability(); }}
+          className={`absolute top-2 right-2 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all shadow-sm ${
+            isSoldOut
+              ? 'bg-red-500 text-white hover:bg-red-600'
+              : 'bg-emerald-500 text-white hover:bg-emerald-600'
+          }`}
+          title={isSoldOut ? 'Clique para disponibilizar' : 'Clique para marcar esgotado'}
+        >
+          {isSoldOut ? <CircleOff className="w-3.5 h-3.5" /> : <CircleCheck className="w-3.5 h-3.5" />}
+          {isSoldOut ? 'Esgotado' : 'Disponível'}
+        </button>
+      </div>
       <div className="p-4">
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center gap-2">
-            <h3 className="font-bold text-[#18181B] dark:text-white">{product.name}</h3>
+            <h3 className={`font-bold ${isSoldOut ? 'text-gray-400 dark:text-gray-500 line-through' : 'text-[#18181B] dark:text-white'}`}>{product.name}</h3>
             {product.highlighted && (
               <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
             )}
           </div>
-          <span className="text-lg font-bold text-[#1a2342] dark:text-blue-400">€{product.price.toFixed(2)}</span>
+          <span className={`text-lg font-bold ${isSoldOut ? 'text-gray-400 dark:text-gray-500' : 'text-[#1a2342] dark:text-blue-400'}`}>€{product.price.toFixed(2)}</span>
         </div>
         <p className="text-xs text-[#71717A] dark:text-gray-400 mb-2">{category?.name}</p>
         <p className="text-sm text-[#71717A] dark:text-gray-400 mb-3 line-clamp-2">{product.description}</p>
