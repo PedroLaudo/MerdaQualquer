@@ -1,0 +1,15 @@
+{
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "app.zentraqr.com"
+        }
+      ],
+      "destination": "https://www.zentraqr.com/login",
+      "permanent": false
+    }
+  ]
+}
