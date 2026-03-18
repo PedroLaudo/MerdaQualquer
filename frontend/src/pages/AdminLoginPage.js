@@ -95,7 +95,7 @@ const AdminLoginPage = () => {
                 onClick={() => navigate('/forgot-password')}
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                {t('login.forgotPassword') ?? 'Esqueceu-se da password?'}
+                {t('Forgot Password') ?? 'Esqueceu-se da password?'}
               </button>
             </div>
             <Button
