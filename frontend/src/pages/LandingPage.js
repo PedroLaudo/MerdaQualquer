@@ -1001,8 +1001,12 @@ const LandingPage = () => {
           <div className="pt-8 border-t flex flex-col sm:flex-row justify-between items-center gap-4" style={{ borderColor: colors.border }}>
             <p className="text-sm" style={{ color: colors.gray }}>{t('footer.rights')}</p>
             <div className="flex gap-6">
-              <button className="text-sm transition-colors hover:opacity-70" style={{ color: colors.gray }}>{t('footer.terms')}</button>
-              <button className="text-sm transition-colors hover:opacity-70" style={{ color: colors.gray }}>{t('footer.privacy')}</button>
+              <button className="text-sm transition-colors hover:opacity-70" style={{ color: colors.gray }} onClick={() => navigate('/terms')}>
+                {t('footer.terms')}
+              </button>
+              <button className="text-sm transition-colors hover:opacity-70" style={{ color: colors.gray }} onClick={() => navigate('/privacy')}>
+                {t('footer.privacy')}
+              </button>
               <button 
                 onClick={() => navigate('/login')} 
                 className="text-sm transition-colors hover:opacity-70 font-medium"

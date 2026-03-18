@@ -22,40 +22,42 @@ import SubscriptionSuccessPage from './pages/SubscriptionSuccessPage';
 import FloorPlanPage from './pages/FloorPlanPage';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import TermsPage from './pages/TermsPage';
+import PrivacyPage from './pages/PrivacyPage';
 
 function App() {
   return (
     <BrowserRouter>
-      <ThemeProvider>
-        <LanguageProvider>
-          <AuthProvider>
-            <SocketProvider>
-              <Routes>
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/login" element={<AdminLoginPage />} />
-                <Route path="/signup" element={<SignupPage />} />
-                <Route path="/demo" element={<DemoPage />} />
-                <Route path="/onboarding" element={<OnboardingPage />} />
-                <Route path="/subscription/success" element={<SubscriptionSuccessPage />} />
-                <Route path="/subscription/cancel" element={<OnboardingPage />} />
-                <Route path="/menu" element={<MenuPage />} />
-                <Route path="/cart" element={<CartPage />} />
-                <Route path="/order-tracking" element={<OrderTrackingPage />} />
-                <Route path="/payment-success" element={<PaymentSuccess />} />
-                <Route path="/payment-cancel" element={<PaymentCancel />} />
-                <Route path="/contact" element={<ContactPage />} />
-                <Route path="/backoffice" element={<BackofficePage />} />
-                <Route path="/admin/login" element={<AdminLoginPage />} />
-                <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                <Route path="/admin/floor-plan" element={<FloorPlanPage />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-              </Routes>
-            </SocketProvider>
-          </AuthProvider>
-        </LanguageProvider>
-      </ThemeProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <SocketProvider>
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<AdminLoginPage />} />
+              <Route path="/signup" element={<SignupPage />} />
+              <Route path="/demo" element={<DemoPage />} />
+              <Route path="/onboarding" element={<OnboardingPage />} />
+              <Route path="/subscription/success" element={<SubscriptionSuccessPage />} />
+              <Route path="/subscription/cancel" element={<OnboardingPage />} />
+              <Route path="/menu" element={<MenuPage />} />
+              <Route path="/cart" element={<CartPage />} />
+              <Route path="/order-tracking" element={<OrderTrackingPage />} />
+              <Route path="/payment-success" element={<PaymentSuccess />} />
+              <Route path="/payment-cancel" element={<PaymentCancel />} />
+              <Route path="/contact" element={<ContactPage />} />
+              <Route path="/backoffice" element={<BackofficePage />} />
+              <Route path="/admin/login" element={<AdminLoginPage />} />
+              <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              <Route path="/admin/floor-plan" element={<FloorPlanPage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/terms" element={<TermsPage />} />
+              <Route path="/privacy" element={<PrivacyPage />} />
+            </Routes>
+          </SocketProvider>
+        </AuthProvider>
+      </LanguageProvider>
     </BrowserRouter>
   );
 }

@@ -889,12 +889,14 @@ const ContactPage = () => {
               <button
                 className="text-sm transition-colors hover:opacity-70"
                 style={{ color: colors.gray }}
+                onClick={() => navigate('/terms')}
               >
                 {copy.footerTerms}
               </button>
               <button
                 className="text-sm transition-colors hover:opacity-70"
                 style={{ color: colors.gray }}
+                onClick={() => navigate('/privacy')}
               >
                 {copy.footerPrivacy}
               </button>
