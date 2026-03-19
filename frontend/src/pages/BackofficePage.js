@@ -35,7 +35,10 @@ import {
   Sparkles,
   Shield,
   RefreshCw,
-  ArrowLeft
+  ArrowLeft,
+  ListChecks,
+  ToggleLeft,
+  ToggleRight
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -241,11 +244,16 @@ const BackofficePage = () => {
 
   // Launch Settings state
   const [launchSettings, setLaunchSettings] = useState({
-    plans_sales_enabled: true
+    plans_sales_enabled: true,
+    landing_mode: 'plans'
   });
   const [loadingLaunchSettings, setLoadingLaunchSettings] = useState(false);
   const [savingLaunchSettings, setSavingLaunchSettings] = useState(false);
   const [launchSettingsSaved, setLaunchSettingsSaved] = useState(false);
+
+  // Waitlist state
+  const [waitlistEntries, setWaitlistEntries] = useState([]);
+  const [loadingWaitlist, setLoadingWaitlist] = useState(false);
 
   // Emails state
   const [emails, setEmails] = useState([]);
@@ -278,6 +286,7 @@ const BackofficePage = () => {
     loadPricing();
     loadLaunchSettings();
     loadEmails();
+    loadWaitlist();
   };
 
   const handleLogin = async (e) => {
@@ -346,7 +355,8 @@ const BackofficePage = () => {
     try {
       const response = await axios.get(`${API}/settings/global`);
       setLaunchSettings({
-        plans_sales_enabled: response.data.plans_sales_enabled ?? true
+        plans_sales_enabled: response.data.plans_sales_enabled ?? true,
+        landing_mode: response.data.landing_mode ?? 'plans'
       });
     } catch (error) {
       console.error('Erro ao carregar configurações de lançamento:', error);
@@ -366,6 +376,43 @@ const BackofficePage = () => {
       alert('Erro ao guardar configurações de lançamento');
     } finally {
       setSavingLaunchSettings(false);
+    }
+  };
+
+  // Waitlist functions
+  const loadWaitlist = async () => {
+    setLoadingWaitlist(true);
+    try {
+      const response = await axios.get(`${API}/backoffice/waitlist`);
+      setWaitlistEntries(response.data);
+    } catch (error) {
+      handleApiError(error);
+    } finally {
+      setLoadingWaitlist(false);
+    }
+  };
+
+  const updateWaitlistStatus = async (entryId, status) => {
+    try {
+      await axios.put(`${API}/backoffice/waitlist/${entryId}/status`, { status });
+      setWaitlistEntries(waitlistEntries.map(e => 
+        e.id === entryId ? { ...e, status } : e
+      ));
+    } catch (error) {
+      handleApiError(error);
+      alert('Erro ao atualizar status');
+    }
+  };
+
+  const deleteWaitlistEntry = async (entryId) => {
+    if (!window.confirm('Tem certeza que deseja eliminar esta entrada?')) return;
+    
+    try {
+      await axios.delete(`${API}/backoffice/waitlist/${entryId}`);
+      setWaitlistEntries(waitlistEntries.filter(e => e.id !== entryId));
+    } catch (error) {
+      handleApiError(error);
+      alert('Erro ao eliminar entrada');
     }
   };
 
@@ -838,6 +885,14 @@ const BackofficePage = () => {
               label="Lançamento"
               onClick={() => { setActiveTab('launch'); setSidebarOpen(false); }}
               testId="backoffice-launch-tab"
+            />
+            <SidebarButton
+              active={activeTab === 'waitlist'}
+              icon={ListChecks}
+              label="Whitelist"
+              badge={waitlistEntries.filter(e => e.status === 'new').length}
+              onClick={() => { setActiveTab('waitlist'); setSidebarOpen(false); loadWaitlist(); }}
+              testId="backoffice-waitlist-tab"
             />
             <SidebarButton
               active={activeTab === 'emails'}
@@ -1716,6 +1771,64 @@ const BackofficePage = () => {
                     </button>
                   </div>
 
+                  {/* Landing Mode Control */}
+                  <div className="mt-4 p-4 rounded-xl border" style={{ borderColor: colors.border }}>
+                    <h3 className="font-bold mb-3" style={{ color: colors.dark }}>Modo da Landing Page</h3>
+                    <p className="text-sm mb-4" style={{ color: colors.gray }}>
+                      Controla o que é mostrado na secção de pricing da landing page
+                    </p>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        onClick={() => setLaunchSettings({...launchSettings, landing_mode: 'plans'})}
+                        className={`p-4 rounded-xl border-2 text-left transition-all ${
+                          launchSettings.landing_mode === 'plans' ? 'shadow-md' : 'hover:border-slate-300'
+                        }`}
+                        style={{ 
+                          borderColor: launchSettings.landing_mode === 'plans' ? colors.primary : colors.border,
+                          backgroundColor: launchSettings.landing_mode === 'plans' ? `${colors.primary}05` : colors.white
+                        }}
+                      >
+                        <div className="flex items-center gap-3 mb-2">
+                          <CreditCard className="w-5 h-5" style={{ color: launchSettings.landing_mode === 'plans' ? colors.primary : colors.gray }} />
+                          <span className="font-medium" style={{ color: launchSettings.landing_mode === 'plans' ? colors.primary : colors.dark }}>
+                            Planos
+                          </span>
+                        </div>
+                        <p className="text-xs" style={{ color: colors.gray }}>
+                          Mostra a secção de pricing com os 3 planos
+                        </p>
+                      </button>
+                      
+                      <button
+                        onClick={() => setLaunchSettings({...launchSettings, landing_mode: 'waitlist'})}
+                        className={`p-4 rounded-xl border-2 text-left transition-all ${
+                          launchSettings.landing_mode === 'waitlist' ? 'shadow-md' : 'hover:border-slate-300'
+                        }`}
+                        style={{ 
+                          borderColor: launchSettings.landing_mode === 'waitlist' ? colors.primary : colors.border,
+                          backgroundColor: launchSettings.landing_mode === 'waitlist' ? `${colors.primary}05` : colors.white
+                        }}
+                      >
+                        <div className="flex items-center gap-3 mb-2">
+                          <ListChecks className="w-5 h-5" style={{ color: launchSettings.landing_mode === 'waitlist' ? colors.primary : colors.gray }} />
+                          <span className="font-medium" style={{ color: launchSettings.landing_mode === 'waitlist' ? colors.primary : colors.dark }}>
+                            Whitelist
+                          </span>
+                        </div>
+                        <p className="text-xs" style={{ color: colors.gray }}>
+                          Mostra formulário de acesso antecipado
+                        </p>
+                      </button>
+                    </div>
+                    
+                    {launchSettings.landing_mode === 'waitlist' && (
+                      <div className="mt-3 p-3 rounded-xl text-sm" style={{ backgroundColor: colors.warningBg, color: colors.warning }}>
+                        <strong>Modo Waitlist ativo:</strong> Os preços não são mostrados na landing, mas continuam editáveis no backoffice.
+                      </div>
+                    )}
+                  </div>
+
                   <div className="flex justify-end mt-6">
                     <button
                       onClick={saveLaunchSettings}
@@ -1816,6 +1929,111 @@ const BackofficePage = () => {
                                 style={{ color: colors.primary }}
                               >
                                 <Eye className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </Panel>
+              )}
+            </div>
+          )}
+
+          {/* Waitlist Tab */}
+          {activeTab === 'waitlist' && (
+            <div>
+              <SectionHeader title="Whitelist" description="Pedidos de acesso antecipado">
+                <button
+                  onClick={loadWaitlist}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl border transition-all hover:bg-slate-50"
+                  style={{ borderColor: colors.border, color: colors.dark }}
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Atualizar
+                </button>
+              </SectionHeader>
+
+              {loadingWaitlist ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin" style={{ color: colors.primary }} />
+                </div>
+              ) : waitlistEntries.length === 0 ? (
+                <Panel className="p-12 text-center">
+                  <ListChecks className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                  <h2 className="text-xl font-bold mb-2" style={{ color: colors.dark }}>
+                    Nenhum Pedido
+                  </h2>
+                  <p style={{ color: colors.gray }}>
+                    Os pedidos de acesso antecipado aparecerão aqui.
+                  </p>
+                </Panel>
+              ) : (
+                <Panel className="overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr style={{ backgroundColor: colors.light }}>
+                          <th className="text-left p-4 text-sm font-medium" style={{ color: colors.gray }}>Negócio</th>
+                          <th className="text-left p-4 text-sm font-medium" style={{ color: colors.gray }}>Contacto</th>
+                          <th className="text-left p-4 text-sm font-medium" style={{ color: colors.gray }}>Mesas</th>
+                          <th className="text-left p-4 text-sm font-medium" style={{ color: colors.gray }}>Status</th>
+                          <th className="text-left p-4 text-sm font-medium" style={{ color: colors.gray }}>Data</th>
+                          <th className="text-right p-4 text-sm font-medium" style={{ color: colors.gray }}>Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y" style={{ borderColor: colors.border }}>
+                        {waitlistEntries.map((entry) => (
+                          <tr key={entry.id} className="hover:bg-slate-50">
+                            <td className="p-4">
+                              <p className="font-medium" style={{ color: colors.dark }}>{entry.business_name}</p>
+                              <p className="text-sm" style={{ color: colors.gray }}>{entry.name}</p>
+                            </td>
+                            <td className="p-4">
+                              <p className="text-sm flex items-center gap-1" style={{ color: colors.dark }}>
+                                <Mail className="w-3 h-3" /> {entry.email}
+                              </p>
+                              {entry.phone && (
+                                <p className="text-sm flex items-center gap-1 mt-1" style={{ color: colors.gray }}>
+                                  <Phone className="w-3 h-3" /> {entry.phone}
+                                </p>
+                              )}
+                            </td>
+                            <td className="p-4">
+                              <p className="text-sm" style={{ color: colors.dark }}>
+                                {entry.table_count || '-'}
+                              </p>
+                            </td>
+                            <td className="p-4">
+                              <select
+                                value={entry.status}
+                                onChange={(e) => updateWaitlistStatus(entry.id, e.target.value)}
+                                className={`text-xs px-2.5 py-1 rounded-full font-medium border cursor-pointer ${
+                                  entry.status === 'new' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                  entry.status === 'contacted' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                  entry.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                  'bg-slate-100 text-slate-600 border-slate-200'
+                                }`}
+                              >
+                                <option value="new">Novo</option>
+                                <option value="contacted">Contactado</option>
+                                <option value="approved">Aprovado</option>
+                                <option value="closed">Fechado</option>
+                              </select>
+                            </td>
+                            <td className="p-4">
+                              <p className="text-sm" style={{ color: colors.gray }}>
+                                {new Date(entry.created_at).toLocaleDateString('pt-PT')}
+                              </p>
+                            </td>
+                            <td className="p-4 text-right">
+                              <button
+                                onClick={() => deleteWaitlistEntry(entry.id)}
+                                className="p-2 rounded-xl hover:bg-red-50 transition-all"
+                                style={{ color: colors.danger }}
+                              >
+                                <Trash2 className="w-4 h-4" />
                               </button>
                             </td>
                           </tr>

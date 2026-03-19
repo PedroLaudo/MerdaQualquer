@@ -2389,23 +2389,35 @@ async def get_global_settings():
         # Return default settings if none exist
         return {
             "plans_sales_enabled": True,  # Default: sales enabled
+            "landing_mode": "plans",  # "plans" | "waitlist"
             "updated_at": datetime.now(timezone.utc).isoformat()
         }
+    
+    # Ensure landing_mode exists (migration-safe)
+    if "landing_mode" not in settings:
+        settings["landing_mode"] = "plans"
     
     return settings
 
 @api_router.put("/backoffice/settings/global")
 async def update_global_settings_backoffice(request: Request, settings_data: dict, _session: dict = Depends(require_backoffice_auth)):
     """Update global platform settings from backoffice"""
-    # Validate settings data
-    if "plans_sales_enabled" not in settings_data:
-        raise HTTPException(status_code=400, detail="Campo 'plans_sales_enabled' é obrigatório")
     
     update_doc = {
         "type": "global_settings",
-        "plans_sales_enabled": bool(settings_data["plans_sales_enabled"]),
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
+    
+    # Handle plans_sales_enabled
+    if "plans_sales_enabled" in settings_data:
+        update_doc["plans_sales_enabled"] = bool(settings_data["plans_sales_enabled"])
+    
+    # Handle landing_mode
+    if "landing_mode" in settings_data:
+        landing_mode = settings_data["landing_mode"]
+        if landing_mode not in ["plans", "waitlist"]:
+            raise HTTPException(status_code=400, detail="landing_mode deve ser 'plans' ou 'waitlist'")
+        update_doc["landing_mode"] = landing_mode
     
     # Update or insert global settings
     await db.settings.update_one(
@@ -2414,11 +2426,79 @@ async def update_global_settings_backoffice(request: Request, settings_data: dic
         upsert=True
     )
     
-    status = "ativadas" if settings_data["plans_sales_enabled"] else "desativadas"
     return {
-        "message": f"Vendas de planos {status} com sucesso",
-        "plans_sales_enabled": settings_data["plans_sales_enabled"]
+        "message": "Configurações atualizadas com sucesso",
+        **{k: v for k, v in update_doc.items() if k != "type"}
     }
+
+# ============= WAITLIST ROUTES =============
+
+class WaitlistEntry(BaseModel):
+    name: str
+    business_name: str
+    email: EmailStr
+    phone: Optional[str] = None
+    table_count: Optional[int] = None
+    message: Optional[str] = None
+
+@api_router.post("/waitlist")
+async def create_waitlist_entry(entry: WaitlistEntry):
+    """Submit a waitlist entry"""
+    
+    # Check if email already exists
+    existing = await db.waitlist_entries.find_one({"email": entry.email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Este email já está na whitelist")
+    
+    doc = {
+        "id": str(uuid.uuid4()),
+        "name": entry.name,
+        "business_name": entry.business_name,
+        "email": entry.email,
+        "phone": entry.phone,
+        "table_count": entry.table_count,
+        "message": entry.message,
+        "source": "landing_waitlist",
+        "status": "new",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.waitlist_entries.insert_one(doc)
+    
+    return {"success": True, "message": "Adicionado à whitelist com sucesso"}
+
+@api_router.get("/backoffice/waitlist")
+async def get_waitlist_entries(request: Request, _session: dict = Depends(require_backoffice_auth)):
+    """Get all waitlist entries for backoffice"""
+    entries = await db.waitlist_entries.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return entries
+
+@api_router.put("/backoffice/waitlist/{entry_id}/status")
+async def update_waitlist_status(request: Request, entry_id: str, data: dict, _session: dict = Depends(require_backoffice_auth)):
+    """Update waitlist entry status"""
+    status = data.get("status")
+    if status not in ["new", "contacted", "approved", "closed"]:
+        raise HTTPException(status_code=400, detail="Status inválido")
+    
+    result = await db.waitlist_entries.update_one(
+        {"id": entry_id},
+        {"$set": {"status": status, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Entrada não encontrada")
+    
+    return {"success": True, "message": f"Status atualizado para {status}"}
+
+@api_router.delete("/backoffice/waitlist/{entry_id}")
+async def delete_waitlist_entry(request: Request, entry_id: str, _session: dict = Depends(require_backoffice_auth)):
+    """Delete a waitlist entry"""
+    result = await db.waitlist_entries.delete_one({"id": entry_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Entrada não encontrada")
+    
+    return {"success": True, "message": "Entrada eliminada"}
 
 @api_router.post("/subscription/register")
 async def register_with_subscription(data: SubscriptionCreate):

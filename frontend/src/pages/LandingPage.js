@@ -28,7 +28,14 @@ import {
   Play,
   Sparkles,
   Check,
-  Globe
+  Globe,
+  Mail,
+  Phone,
+  Building2,
+  Loader2,
+  UserCheck,
+  Gift,
+  Headphones
 } from 'lucide-react';
 
 // Color palette - Based on Logo
@@ -183,7 +190,21 @@ const LandingPage = () => {
   
   // Launch Settings state
   const [plansSalesEnabled, setPlansSalesEnabled] = useState(true);
+  const [landingMode, setLandingMode] = useState('plans'); // "plans" | "waitlist"
   const [loadingSettings, setLoadingSettings] = useState(true);
+  
+  // Waitlist form state
+  const [waitlistForm, setWaitlistForm] = useState({
+    name: '',
+    business_name: '',
+    email: '',
+    phone: '',
+    table_count: '',
+    message: ''
+  });
+  const [waitlistLoading, setWaitlistLoading] = useState(false);
+  const [waitlistSuccess, setWaitlistSuccess] = useState(false);
+  const [waitlistError, setWaitlistError] = useState('');
 
   const API = process.env.REACT_APP_BACKEND_URL;
 
@@ -222,15 +243,55 @@ const LandingPage = () => {
         const data = await response.json();
         console.log('📦 [LandingPage] Settings loaded:', data);
         setPlansSalesEnabled(data.plans_sales_enabled ?? true);
+        setLandingMode(data.landing_mode ?? 'plans');
       } catch (error) {
         console.error('❌ [LandingPage] Error loading settings:', error);
         setPlansSalesEnabled(true);
+        setLandingMode('plans');
       } finally {
         setLoadingSettings(false);
       }
     };
     loadSettings();
   }, [API]);
+
+  // Submit waitlist form
+  const submitWaitlist = async (e) => {
+    e.preventDefault();
+    setWaitlistLoading(true);
+    setWaitlistError('');
+    
+    try {
+      const response = await fetch(`${API}/api/waitlist`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: waitlistForm.name,
+          business_name: waitlistForm.business_name,
+          email: waitlistForm.email,
+          phone: waitlistForm.phone || null,
+          table_count: waitlistForm.table_count ? parseInt(waitlistForm.table_count) : null,
+          message: waitlistForm.message || null
+        })
+      });
+      
+      if (response.ok) {
+        setWaitlistSuccess(true);
+        setWaitlistForm({ name: '', business_name: '', email: '', phone: '', table_count: '', message: '' });
+      } else {
+        const data = await response.json();
+        if (response.status === 400 && data.detail?.includes('whitelist')) {
+          setWaitlistError(t('waitlist.errorDuplicate'));
+        } else {
+          setWaitlistError(t('waitlist.errorGeneric'));
+        }
+      }
+    } catch (error) {
+      setWaitlistError(t('waitlist.errorGeneric'));
+    } finally {
+      setWaitlistLoading(false);
+    }
+  };
 
   const scrollToSection = (id) => {
     setMobileMenuOpen(false);
@@ -732,146 +793,403 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* PRICING SECTION */}
+      {/* PRICING / WAITLIST SECTION */}
       <section id="pricing" className="py-20 lg:py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6" style={{ color: colors.dark }}>
-              {t('pricing.title')} <span style={{ color: colors.accent }}>{t('pricing.titleHighlight')}</span>
-            </h2>
-            <p className="max-w-2xl mx-auto text-lg mb-8" style={{ color: colors.gray }}>
-              {t('pricing.description')}
-            </p>
-
-            <div className="inline-flex items-center gap-4 p-1.5 rounded-full border" style={{ borderColor: colors.border, backgroundColor: colors.light }}>
-              <button
-                onClick={() => setBillingCycle('monthly')}
-                className={`px-6 py-2.5 rounded-full font-medium transition-all ${billingCycle === 'monthly' ? 'bg-white shadow-sm' : ''}`}
-                style={{ color: billingCycle === 'monthly' ? colors.dark : colors.gray }}
-                data-testid="billing-monthly"
-              >
-                {t('pricing.monthly')}
-              </button>
-              <button
-                onClick={() => setBillingCycle('annual')}
-                className={`px-6 py-2.5 rounded-full font-medium transition-all flex items-center gap-2 ${billingCycle === 'annual' ? 'bg-white shadow-sm' : ''}`}
-                style={{ color: billingCycle === 'annual' ? colors.dark : colors.gray }}
-                data-testid="billing-annual"
-              >
-                {t('pricing.annual')}
-                <span className="text-xs px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: colors.accent }}>
-                  {t('pricing.discount')}
-                </span>
-              </button>
-            </div>
-          </motion.div>
-
-          {/* Launching Soon Badge */}
-          {!plansSalesEnabled && !loadingSettings && (
+          
+          {/* WAITLIST MODE */}
+          {landingMode === 'waitlist' ? (
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="max-w-2xl mx-auto mb-8 p-4 rounded-xl border-2 border-orange-400 bg-orange-50 text-center"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
             >
-              <p className="text-orange-600 font-bold flex items-center justify-center gap-2 mb-1">
-                <Sparkles className="w-5 h-5" />
-                {language === 'pt' ? '🚀 Lançamento em breve' : '🚀 Launching Soon'}
-              </p>
-              <p className="text-sm text-orange-700">
-                {language === 'pt' 
-                  ? 'Estamos a preparar algo incrível. Lançamento em breve.' 
-                  : 'We are preparing something incredible. Launching soon.'}
-              </p>
-            </motion.div>
-          )}
+              {/* Header */}
+              <div className="text-center mb-12">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full border mb-6"
+                  style={{ borderColor: colors.border, backgroundColor: colors.light }}
+                >
+                  <Sparkles className="w-4 h-4" style={{ color: colors.accent }} />
+                  <span className="text-sm font-medium" style={{ color: colors.dark }}>{t('waitlist.badge')}</span>
+                </motion.div>
+                
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6" style={{ color: colors.dark }}>
+                  {t('waitlist.title')}
+                </h2>
+                <p className="max-w-2xl mx-auto text-lg" style={{ color: colors.gray }}>
+                  {t('waitlist.description')}
+                </p>
+              </div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {pricingPlans.map((plan, index) => (
-              <motion.div
-                key={index}
+              {/* Waitlist Content */}
+              <div className="grid lg:grid-cols-5 gap-8 max-w-6xl mx-auto">
+                {/* Form Card */}
+                <div className="lg:col-span-3">
+                  <div 
+                    className="bg-white rounded-3xl p-8 lg:p-10 border shadow-sm"
+                    style={{ borderColor: colors.border }}
+                  >
+                    {waitlistSuccess ? (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="text-center py-12"
+                      >
+                        <div 
+                          className="w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center"
+                          style={{ backgroundColor: `${colors.accent}15` }}
+                        >
+                          <CheckCircle2 className="w-10 h-10" style={{ color: colors.accent }} />
+                        </div>
+                        <h3 className="text-2xl font-bold mb-3" style={{ color: colors.dark }}>
+                          {t('waitlist.successTitle')}
+                        </h3>
+                        <p style={{ color: colors.gray }}>
+                          {t('waitlist.successMessage')}
+                        </p>
+                      </motion.div>
+                    ) : (
+                      <form onSubmit={submitWaitlist} className="space-y-5">
+                        {waitlistError && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="p-4 rounded-xl border text-sm"
+                            style={{ backgroundColor: '#FEF2F2', borderColor: '#FECACA', color: '#DC2626' }}
+                          >
+                            {waitlistError}
+                          </motion.div>
+                        )}
+                        
+                        <div className="grid sm:grid-cols-2 gap-5">
+                          <div>
+                            <label className="block text-sm font-medium mb-2" style={{ color: colors.dark }}>
+                              {t('waitlist.nameLabel')} *
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              value={waitlistForm.name}
+                              onChange={(e) => setWaitlistForm({...waitlistForm, name: e.target.value})}
+                              placeholder={t('waitlist.namePlaceholder')}
+                              className="w-full px-4 py-3 rounded-xl border-2 focus:outline-none transition-all"
+                              style={{ borderColor: colors.border }}
+                              onFocus={(e) => e.target.style.borderColor = colors.primary}
+                              onBlur={(e) => e.target.style.borderColor = colors.border}
+                              data-testid="waitlist-name"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2" style={{ color: colors.dark }}>
+                              {t('waitlist.businessLabel')} *
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              value={waitlistForm.business_name}
+                              onChange={(e) => setWaitlistForm({...waitlistForm, business_name: e.target.value})}
+                              placeholder={t('waitlist.businessPlaceholder')}
+                              className="w-full px-4 py-3 rounded-xl border-2 focus:outline-none transition-all"
+                              style={{ borderColor: colors.border }}
+                              onFocus={(e) => e.target.style.borderColor = colors.primary}
+                              onBlur={(e) => e.target.style.borderColor = colors.border}
+                              data-testid="waitlist-business"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid sm:grid-cols-2 gap-5">
+                          <div>
+                            <label className="block text-sm font-medium mb-2" style={{ color: colors.dark }}>
+                              {t('waitlist.emailLabel')} *
+                            </label>
+                            <input
+                              type="email"
+                              required
+                              value={waitlistForm.email}
+                              onChange={(e) => setWaitlistForm({...waitlistForm, email: e.target.value})}
+                              placeholder={t('waitlist.emailPlaceholder')}
+                              className="w-full px-4 py-3 rounded-xl border-2 focus:outline-none transition-all"
+                              style={{ borderColor: colors.border }}
+                              onFocus={(e) => e.target.style.borderColor = colors.primary}
+                              onBlur={(e) => e.target.style.borderColor = colors.border}
+                              data-testid="waitlist-email"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2" style={{ color: colors.dark }}>
+                              {t('waitlist.phoneLabel')}
+                            </label>
+                            <input
+                              type="tel"
+                              value={waitlistForm.phone}
+                              onChange={(e) => setWaitlistForm({...waitlistForm, phone: e.target.value})}
+                              placeholder={t('waitlist.phonePlaceholder')}
+                              className="w-full px-4 py-3 rounded-xl border-2 focus:outline-none transition-all"
+                              style={{ borderColor: colors.border }}
+                              onFocus={(e) => e.target.style.borderColor = colors.primary}
+                              onBlur={(e) => e.target.style.borderColor = colors.border}
+                              data-testid="waitlist-phone"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium mb-2" style={{ color: colors.dark }}>
+                            {t('waitlist.tablesLabel')}
+                          </label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={waitlistForm.table_count}
+                            onChange={(e) => setWaitlistForm({...waitlistForm, table_count: e.target.value})}
+                            placeholder={t('waitlist.tablesPlaceholder')}
+                            className="w-full px-4 py-3 rounded-xl border-2 focus:outline-none transition-all"
+                            style={{ borderColor: colors.border }}
+                            onFocus={(e) => e.target.style.borderColor = colors.primary}
+                            onBlur={(e) => e.target.style.borderColor = colors.border}
+                            data-testid="waitlist-tables"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium mb-2" style={{ color: colors.dark }}>
+                            {t('waitlist.messageLabel')}
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={waitlistForm.message}
+                            onChange={(e) => setWaitlistForm({...waitlistForm, message: e.target.value})}
+                            placeholder={t('waitlist.messagePlaceholder')}
+                            className="w-full px-4 py-3 rounded-xl border-2 focus:outline-none transition-all resize-none"
+                            style={{ borderColor: colors.border }}
+                            onFocus={(e) => e.target.style.borderColor = colors.primary}
+                            onBlur={(e) => e.target.style.borderColor = colors.border}
+                            data-testid="waitlist-message"
+                          />
+                        </div>
+
+                        <motion.button
+                          type="submit"
+                          disabled={waitlistLoading}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          className="w-full py-4 rounded-full font-bold text-lg transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-70"
+                          style={{ backgroundColor: colors.accent, color: 'white' }}
+                          data-testid="waitlist-submit"
+                        >
+                          {waitlistLoading ? (
+                            <>
+                              <Loader2 className="w-5 h-5 animate-spin" />
+                              {t('waitlist.ctaLoading')}
+                            </>
+                          ) : (
+                            <>
+                              {t('waitlist.cta')}
+                              <ArrowRight className="w-5 h-5" />
+                            </>
+                          )}
+                        </motion.button>
+                      </form>
+                    )}
+                  </div>
+                </div>
+
+                {/* Benefits Panel */}
+                <div className="lg:col-span-2">
+                  <div 
+                    className="rounded-3xl p-8 h-full"
+                    style={{ backgroundColor: colors.light }}
+                  >
+                    <h3 className="font-bold text-xl mb-6" style={{ color: colors.dark }}>
+                      {language === 'pt' ? 'O que vai receber' : 'What you get'}
+                    </h3>
+                    
+                    <div className="space-y-5">
+                      {[
+                        { icon: UserCheck, text: t('waitlist.benefit1') },
+                        { icon: Gift, text: t('waitlist.benefit2') },
+                        { icon: Headphones, text: t('waitlist.benefit3') }
+                      ].map((benefit, index) => (
+                        <motion.div
+                          key={index}
+                          initial={{ opacity: 0, x: 20 }}
+                          whileInView={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          viewport={{ once: true }}
+                          className="flex items-start gap-4"
+                        >
+                          <div 
+                            className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+                            style={{ backgroundColor: `${colors.accent}15` }}
+                          >
+                            <benefit.icon className="w-6 h-6" style={{ color: colors.accent }} />
+                          </div>
+                          <div className="pt-2">
+                            <p className="font-medium" style={{ color: colors.dark }}>{benefit.text}</p>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+
+                    <div className="mt-8 pt-6 border-t" style={{ borderColor: colors.border }}>
+                      <p className="text-sm" style={{ color: colors.gray }}>
+                        {language === 'pt' 
+                          ? 'Entraremos em contacto por email assim que tivermos vagas disponíveis.' 
+                          : "We'll contact you by email as soon as we have spots available."}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ) : (
+            /* PRICING MODE */
+            <>
+              <motion.div 
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
+                transition={{ duration: 0.6 }}
                 viewport={{ once: true }}
-                className={`rounded-2xl p-8 relative ${plan.highlighted ? 'shadow-xl transform lg:scale-105' : 'border'}`}
-                style={{ 
-                  backgroundColor: plan.highlighted ? colors.primary : 'white',
-                  borderColor: !plan.highlighted ? colors.border : undefined
-                }}
+                className="text-center mb-12"
               >
-                {plan.highlighted && (
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 px-4 py-1 rounded-full text-xs font-bold text-white" style={{ backgroundColor: colors.accent }}>
-                    {t('pricing.mostPopular')}
-                  </div>
-                )}
-                <h3 className="font-bold text-xl mb-2" style={{ color: plan.highlighted ? 'white' : colors.dark }}>
-                  {plan.name}
-                </h3>
-                <p className="text-sm mb-6" style={{ color: plan.highlighted ? 'rgba(255,255,255,0.7)' : colors.gray }}>
-                  {plan.description}
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6" style={{ color: colors.dark }}>
+                  {t('pricing.title')} <span style={{ color: colors.accent }}>{t('pricing.titleHighlight')}</span>
+                </h2>
+                <p className="max-w-2xl mx-auto text-lg mb-8" style={{ color: colors.gray }}>
+                  {t('pricing.description')}
                 </p>
-                <div className="mb-6">
-                  {plan.monthlyPrice ? (
-                    <>
-                      <span className="text-4xl font-bold" style={{ color: plan.highlighted ? 'white' : colors.dark }}>
-                        €{billingCycle === 'monthly' ? plan.monthlyPrice : plan.annualPrice}
-                      </span>
-                      <span style={{ color: plan.highlighted ? 'rgba(255,255,255,0.7)' : colors.gray }}>{t('pricing.month')}</span>
-                    </>
-                  ) : (
-                    <span className="text-4xl font-bold" style={{ color: plan.highlighted ? 'white' : colors.dark }}>
-                      {t('pricing.custom')}
+
+                <div className="inline-flex items-center gap-4 p-1.5 rounded-full border" style={{ borderColor: colors.border, backgroundColor: colors.light }}>
+                  <button
+                    onClick={() => setBillingCycle('monthly')}
+                    className={`px-6 py-2.5 rounded-full font-medium transition-all ${billingCycle === 'monthly' ? 'bg-white shadow-sm' : ''}`}
+                    style={{ color: billingCycle === 'monthly' ? colors.dark : colors.gray }}
+                    data-testid="billing-monthly"
+                  >
+                    {t('pricing.monthly')}
+                  </button>
+                  <button
+                    onClick={() => setBillingCycle('annual')}
+                    className={`px-6 py-2.5 rounded-full font-medium transition-all flex items-center gap-2 ${billingCycle === 'annual' ? 'bg-white shadow-sm' : ''}`}
+                    style={{ color: billingCycle === 'annual' ? colors.dark : colors.gray }}
+                    data-testid="billing-annual"
+                  >
+                    {t('pricing.annual')}
+                    <span className="text-xs px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: colors.accent }}>
+                      {t('pricing.discount')}
                     </span>
-                  )}
+                  </button>
                 </div>
-                <ul className="space-y-3 mb-8">
-                  {plan.features.map((feature, i) => (
-                    <li key={i} className="flex items-center gap-2" style={{ color: plan.highlighted ? 'rgba(255,255,255,0.9)' : colors.gray }}>
-                      <Check className="w-5 h-5" style={{ color: plan.highlighted ? 'white' : colors.accent }} />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                <button 
-                  onClick={() => {
-                    // If sales are disabled, don't navigate
-                    if (!plansSalesEnabled) return;
-                    
-                    if (plan.monthlyPrice) {
-                      navigate(`/onboarding?plan=${index === 0 ? 'starter' : index === 1 ? 'pro' : 'enterprise'}&billing=${billingCycle}`);
-                    } else {
-                      navigate('/contact');
-                    }
-                  }}
-                  disabled={!plansSalesEnabled && plan.monthlyPrice}
-                  className="w-full py-3 rounded-full font-semibold transition-all hover:opacity-90 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  style={{ 
-                    backgroundColor: plan.highlighted 
-                      ? (plansSalesEnabled ? colors.accent : colors.gray)
-                      : 'transparent',
-                    color: plan.highlighted ? 'white' : (plansSalesEnabled ? colors.primary : colors.gray),
-                    border: plan.highlighted ? 'none' : `2px solid ${plansSalesEnabled ? colors.primary : colors.gray}`
-                  }}
-                  data-testid={`plan-${plan.name.toLowerCase()}`}
-                >
-                  {!plansSalesEnabled && plan.monthlyPrice ? (
-                    <>
-                      <Sparkles className="w-5 h-5" />
-                      {language === 'pt' ? 'Lançamento em Breve' : 'Launching Soon'}
-                    </>
-                  ) : (
-                    plan.monthlyPrice ? t('pricing.cta') : t('pricing.ctaEnterprise')
-                  )}
-                </button>
               </motion.div>
-            ))}
-          </div>
+
+              {/* Launching Soon Badge */}
+              {!plansSalesEnabled && !loadingSettings && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="max-w-2xl mx-auto mb-8 p-4 rounded-xl border-2 border-orange-400 bg-orange-50 text-center"
+                >
+                  <p className="text-orange-600 font-bold flex items-center justify-center gap-2 mb-1">
+                    <Sparkles className="w-5 h-5" />
+                    {language === 'pt' ? '🚀 Lançamento em breve' : '🚀 Launching Soon'}
+                  </p>
+                  <p className="text-sm text-orange-700">
+                    {language === 'pt' 
+                      ? 'Estamos a preparar algo incrível. Lançamento em breve.' 
+                      : 'We are preparing something incredible. Launching soon.'}
+                  </p>
+                </motion.div>
+              )}
+
+              <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                {pricingPlans.map((plan, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    viewport={{ once: true }}
+                    className={`rounded-2xl p-8 relative ${plan.highlighted ? 'shadow-xl transform lg:scale-105' : 'border'}`}
+                    style={{ 
+                      backgroundColor: plan.highlighted ? colors.primary : 'white',
+                      borderColor: !plan.highlighted ? colors.border : undefined
+                    }}
+                  >
+                    {plan.highlighted && (
+                      <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 px-4 py-1 rounded-full text-xs font-bold text-white" style={{ backgroundColor: colors.accent }}>
+                        {t('pricing.mostPopular')}
+                      </div>
+                    )}
+                    <h3 className="font-bold text-xl mb-2" style={{ color: plan.highlighted ? 'white' : colors.dark }}>
+                      {plan.name}
+                    </h3>
+                    <p className="text-sm mb-6" style={{ color: plan.highlighted ? 'rgba(255,255,255,0.7)' : colors.gray }}>
+                      {plan.description}
+                    </p>
+                    <div className="mb-6">
+                      {plan.monthlyPrice ? (
+                        <>
+                          <span className="text-4xl font-bold" style={{ color: plan.highlighted ? 'white' : colors.dark }}>
+                            €{billingCycle === 'monthly' ? plan.monthlyPrice : plan.annualPrice}
+                          </span>
+                          <span style={{ color: plan.highlighted ? 'rgba(255,255,255,0.7)' : colors.gray }}>{t('pricing.month')}</span>
+                        </>
+                      ) : (
+                        <span className="text-4xl font-bold" style={{ color: plan.highlighted ? 'white' : colors.dark }}>
+                          {t('pricing.custom')}
+                        </span>
+                      )}
+                    </div>
+                    <ul className="space-y-3 mb-8">
+                      {plan.features.map((feature, i) => (
+                        <li key={i} className="flex items-center gap-2" style={{ color: plan.highlighted ? 'rgba(255,255,255,0.9)' : colors.gray }}>
+                          <Check className="w-5 h-5" style={{ color: plan.highlighted ? 'white' : colors.accent }} />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                    <button 
+                      onClick={() => {
+                        // If sales are disabled, don't navigate
+                        if (!plansSalesEnabled) return;
+                        
+                        if (plan.monthlyPrice) {
+                          navigate(`/onboarding?plan=${index === 0 ? 'starter' : index === 1 ? 'pro' : 'enterprise'}&billing=${billingCycle}`);
+                        } else {
+                          navigate('/contact');
+                        }
+                      }}
+                      disabled={!plansSalesEnabled && plan.monthlyPrice}
+                      className="w-full py-3 rounded-full font-semibold transition-all hover:opacity-90 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      style={{ 
+                        backgroundColor: plan.highlighted 
+                          ? (plansSalesEnabled ? colors.accent : colors.gray)
+                          : 'transparent',
+                        color: plan.highlighted ? 'white' : (plansSalesEnabled ? colors.primary : colors.gray),
+                        border: plan.highlighted ? 'none' : `2px solid ${plansSalesEnabled ? colors.primary : colors.gray}`
+                      }}
+                      data-testid={`plan-${plan.name.toLowerCase()}`}
+                    >
+                      {!plansSalesEnabled && plan.monthlyPrice ? (
+                        <>
+                          <Sparkles className="w-5 h-5" />
+                          {language === 'pt' ? 'Lançamento em Breve' : 'Launching Soon'}
+                        </>
+                      ) : (
+                        plan.monthlyPrice ? t('pricing.cta') : t('pricing.ctaEnterprise')
+                      )}
+                    </button>
+                  </motion.div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </section>
 
